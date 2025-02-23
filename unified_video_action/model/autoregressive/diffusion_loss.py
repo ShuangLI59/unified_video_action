@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.utils.checkpoint import checkpoint
 import math
-import pdb
 from unified_video_action.model.autoregressive.diffusion import create_diffusion
 
 class DiffLoss(nn.Module):
@@ -211,9 +210,6 @@ class SimpleMLPAdaLN(nn.Module):
     ):
         super().__init__()
         
-        print('model_channels', model_channels)
-        print('num_res_blocks', num_res_blocks)
-
         self.in_channels = in_channels
         self.model_channels = model_channels
         self.out_channels = out_channels

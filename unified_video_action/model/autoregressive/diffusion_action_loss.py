@@ -1,12 +1,9 @@
 import torch
 import torch.nn as nn
-from torch.utils.checkpoint import checkpoint
-import math
 from einops import rearrange
 
 from unified_video_action.model.autoregressive.diffusion import create_diffusion
 from unified_video_action.model.autoregressive.diffusion_loss import SimpleMLPAdaLN
-import pdb
 
 
 class DiffActLoss(nn.Module):
