@@ -1,0 +1,117 @@
+defaults:
+  - umi_lazy@dataset
+  - _self_
+
+name: umi
+task_type: multiple_datasets
+task_modes: ["policy_model", "full_dynamic_model"]
+
+dataset:
+  _target_: unified_video_action.dataset.umi_multi_dataset.UmiMultiDataset
+
+  dataset_root_dir: ???
+  used_episode_indices_file: ""
+
+  dataset_configs:
+    cup_arrangement_0:
+      include_episode_num: 500
+      mask_mirror: True
+    towel_folding_0:
+      include_episode_num: 500
+      mask_mirror: False
+    mouse_arrangement_0:
+      include_episode_num: 500
+      mask_mirror: False
+
+  zarr_path: "" # Will be overridden in the initialization function
+  normalizer_type: all
+  language_emb_model: null
+  # The rest should be inherited from umi_lazy_dataset that are kept the same for all the datasets.
+
+
+camera_obs_latency: 0.125
+robot_obs_latency: 0.0001
+gripper_obs_latency: 0.02
+dataset_frequeny: 0 #59.94
+obs_down_sample_steps: 3 # 3, 1
+
+low_dim_obs_horizon: 32
+img_obs_horizon: 32
+action_horizon: 32
+ignore_proprioception: False
+
+shape_meta: &shape_meta
+  image_resolution: 224
+  # acceptable types: rgb, low_dim
+  obs:
+    camera0_rgb:
+      shape: [3, 224, 224]
+      horizon: ${task.img_obs_horizon} # int
+      latency_steps: 0 # float
+      down_sample_steps: ${task.obs_down_sample_steps} # int
+      type: rgb
+      ignore_by_policy: False
+    robot0_eef_pos:
+      shape: [3]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+    # robot0_eef_pos_abs:
+    #   shape: [1]
+    #   axis: [2] # 2 means z-axis
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    # robot0_eef_rot_axis_angle_abs:
+    #   shape: [2]
+    #   axis: [0, 1] # yaw and pitch
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    robot0_eef_rot_axis_angle:
+      raw_shape: [3]
+      shape: [6]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      rotation_rep: rotation_6d
+      ignore_by_policy: ${task.ignore_proprioception}
+    robot0_gripper_width:
+      shape: [1]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.gripper_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+
+    # pose with respect to episode start
+    # robot0_eef_pos_wrt_start:
+    #   shape: [3]
+    #   horizon: ${task.low_dim_obs_horizon} # int
+    #   latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+    #   down_sample_steps: ${task.obs_down_sample_steps} # float
+    #   type: low_dim
+    #   ignore_by_policy: ${task.ignore_proprioception}
+    robot0_eef_rot_axis_angle_wrt_start:
+      raw_shape: [3]
+      shape: [6]
+      horizon: ${task.low_dim_obs_horizon} # int
+      latency_steps: ${eval:'(${task.camera_obs_latency} - ${task.robot_obs_latency}) * ${task.dataset_frequeny}'} # float
+      down_sample_steps: ${task.obs_down_sample_steps} # float
+      type: low_dim
+      ignore_by_policy: ${task.ignore_proprioception}
+  action: 
+    shape: [10]
+    horizon: ${task.action_horizon}
+    latency_steps: 0 # float
+    down_sample_steps: ${task.obs_down_sample_steps} # int
+    rotation_rep: rotation_6d
+
+pose_repr: &pose_repr
+  obs_pose_repr: relative # abs or rel
+  action_pose_repr: relative # abs or rel or delta

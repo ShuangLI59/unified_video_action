@@ -1,0 +1,192 @@
+name: diffusion_policy
+
+dataset_obs_steps: 2
+exp_name: default
+horizon: 10
+keypoint_visible_rate: 1.0
+n_action_steps: 8
+n_latency_steps: 0
+n_obs_steps: 2
+obs_as_cond: true
+past_action_visible: false
+task_name: tool_hang_image
+
+shape_meta: &shape_meta
+  action:
+    shape:
+    - 10
+  obs:
+    robot0_eef_pos:
+      shape:
+      - 3
+    robot0_eef_quat:
+      shape:
+      - 4
+    robot0_eye_in_hand_image:
+      shape:
+      - 3
+      - 240
+      - 240
+      type: rgb
+    robot0_gripper_qpos:
+      shape:
+      - 2
+    sideview_image:
+      shape:
+      - 3
+      - 240
+      - 240
+      type: rgb
+
+task:
+  abs_action: true
+  dataset:
+    _target_: unified_video_action.dataset.robomimic_replay_image_dataset.RobomimicReplayImageDataset
+    language_emb_model: null
+    abs_action: true
+    dataset_path: data/tool_hang/ph/image_abs.hdf5
+    horizon: 10
+    n_obs_steps: 2
+    pad_after: 7
+    pad_before: 1
+    rotation_rep: rotation_6d
+    seed: 42
+    shape_meta: *shape_meta
+    use_cache: true
+    val_ratio: 0.02
+  dataset_path: data/tool_hang/ph/image_abs.hdf5
+  dataset_type: ph
+  
+  env_runner:
+    _target_: unified_video_action.env_runner.robomimic_image_runner.RobomimicImageRunner
+    abs_action: true
+    crf: 22
+    dataset_path: data/tool_hang/ph/image_abs.hdf5
+    fps: 10
+    max_steps: 700
+    n_action_steps: 8
+    n_envs: 28
+    n_obs_steps: 2
+    n_test: 50
+    n_test_vis: 4
+    n_train: 6
+    n_train_vis: 2
+    past_action: false
+    render_obs_key: sideview_image
+    shape_meta: *shape_meta
+    test_start_seed: 100000
+    tqdm_interval_sec: 1.0
+    train_start_idx: 0
+  name: tool_hang_image
+  shape_meta: *shape_meta
+  task_name: tool_hang
+
+model:
+  _target_: unified_video_action.workspace.train_diffusion_transformer_hybrid_workspace.TrainDiffusionTransformerHybridWorkspace
+
+  policy:
+    _target_: unified_video_action.policy.diffusion_transformer_hybrid_image_policy.DiffusionTransformerHybridImagePolicy
+    pretrain_checkpoint: null
+    debug: None
+    causal_attn: true
+    crop_shape:
+    - 216
+    - 216
+    eval_fixed_crop: true
+    horizon: 10
+    n_action_steps: 8
+    n_cond_layers: 0
+    n_emb: 256
+    n_head: 4
+    n_layer: 8
+    n_obs_steps: 2
+    noise_scheduler:
+      _target_: diffusers.schedulers.scheduling_ddpm.DDPMScheduler
+      beta_end: 0.02
+      beta_schedule: squaredcos_cap_v2
+      beta_start: 0.0001
+      clip_sample: true
+      num_train_timesteps: 100
+      prediction_type: epsilon
+      variance_type: fixed_small
+    num_inference_steps: 100
+    obs_as_cond: true
+    obs_encoder_group_norm: true
+    p_drop_attn: 0.3
+    p_drop_emb: 0.0
+    shape_meta: *shape_meta
+    time_as_cond: true
+
+optimizer:
+  betas:
+  - 0.9
+  - 0.95
+  learning_rate: 0.0001
+  obs_encoder_weight_decay: 1.0e-06
+  transformer_weight_decay: 0.001
+
+dataloader:
+  batch_size: 64
+  num_workers: 8
+  persistent_workers: false
+  pin_memory: true
+  shuffle: true
+
+val_dataloader:
+  batch_size: 64
+  num_workers: 8
+  persistent_workers: false
+  pin_memory: true
+  shuffle: false
+
+training:
+  checkpoint_every: 10
+  debug: false
+  device: cuda:0
+  gradient_accumulate_every: 1
+  lr_scheduler: cosine
+  lr_warmup_steps: 1000
+  max_train_steps: null
+  max_val_steps: null
+  num_epochs: 3500
+  resume: true
+  rollout_every: 10
+  sample_every: 5
+  seed: 42
+  tqdm_interval_sec: 1.0
+  use_ema: true
+  val_every: 1
+  mixed_precision: 'fp16'
+
+checkpoint:
+  save_last_ckpt: true
+  save_last_snapshot: false
+  topk:
+    format_str: epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt
+    k: 1
+    mode: max
+    monitor_key: test_mean_score
+
+ema:
+  _target_: unified_video_action.model.diffusion.ema_model.EMAModel
+  inv_gamma: 1.0
+  max_value: 0.9999
+  min_value: 0.0
+  power: 0.75
+  update_after_step: 0
+
+logging:
+  group: null
+  id: null
+  mode: online
+  name: 2023.01.04-03.58.37_train_diffusion_transformer_hybrid_tool_hang_image_abs
+  project: diffusion_policy_debug
+  resume: true
+  tags:
+  - train_diffusion_transformer_hybrid
+  - tool_hang_image_abs
+  - default
+
+multi_run:
+  run_dir: data/outputs/2023.01.04/03.58.37_train_diffusion_transformer_hybrid_tool_hang_image_abs
+  wandb_name_base: 2023.01.04-03.58.37_train_diffusion_transformer_hybrid_tool_hang_image_abs

@@ -1,0 +1,67 @@
+_target_: unified_video_action.workspace.train_unified_video_action_workspace.TrainUnifiedVideoActionWorkspace
+
+policy:
+  _target_: unified_video_action.policy.unified_video_action_policy.UnifiedVideoActionPolicy
+  selected_training_mode: null
+  debug: None
+  n_action_steps: 8
+  use_proprioception: null
+  use_history_action: null
+  action_mask_ratio: 0.5
+  different_history_freq: null
+  flag_different_freq_and_interval: null
+  predict_wrist_img: null
+  predict_proprioception: null
+  shape_meta: ${task.shape_meta}
+  
+  vae_model_params:
+    autoencoder_path: pretrained_models/vae/kl16.ckpt
+    ddconfig:
+      vae_embed_dim: 16
+      ch_mult: [1, 1, 2, 2, 4]
+
+  autoregressive_model_params:
+    pretrained_model_path: null
+    model_size: mar_base
+    img_size: 256
+    vae_stride: 16
+    patch_size: 1
+    vae_embed_dim: 16
+    mask_ratio_min: 0.7
+    label_drop_prob: 0.1
+    attn_dropout: 0.1
+    proj_dropout: 0.1
+    # each frame 256 visual tokens, 4 frames as condition
+    diffloss_d: 6
+    diffloss_w: 1024
+    diffloss_act_d: 6
+    diffloss_act_w: 1024
+    num_sampling_steps: "100"
+    diffusion_batch_mul: 1
+    grad_checkpointing: False
+    #
+    num_iter: 1
+    cfg: 1
+    cfg_schedule: "linear"
+    temperature: 0.95
+    predict_video: True
+    #
+    act_diff_training_steps: 1000
+    act_diff_testing_steps: "100"
+    
+  
+  action_model_params:
+    predict_action: False
+    act_model_type: conv_fc
+  
+  # ddpm_solver: ddpm_avdc
+  shift_action: True
+    
+  optimizer:
+    learning_rate: 0.0001
+    weight_decay: 0.02
+    betas:
+    - 0.9
+    - 0.95
+
+

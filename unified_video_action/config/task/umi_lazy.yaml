@@ -1,0 +1,132 @@
+_target_: diffusion_policy.dataset.umi_lazy_dataset.UmiLazyDataset
+
+robot_num: 1
+
+zarr_path: ???
+name: ""
+include_episode_num: -1 # To specify how many episodes to include. -1 means using all episodes.
+include_episode_indices: [] # If not empty, will override used_episode_num
+used_episode_ratio: 0.95 # 90% of the included episodes will be used. Rest can be split into validation set
+history_padding_length: 15
+future_padding_length: 16
+starting_percentile_max: 1.0 # Until the very end of each episode
+starting_percentile_min: 0.0 # From the very beginning of each episode
+index_pool_size_per_episode: -1 # -1 means using all indices
+seed: 42
+use_relative_pose: true
+down_sample_steps: 3
+apply_augmentation_in_cpu: True
+mask_mirror: False
+random_img_sampling: False
+
+source_data_meta:
+  camera0_rgb:
+    include_indices: ${eval:"ListConfig(list(range(-12, 17, 4)))"} # If random_img_sampling is True, the first 4 frames will be randomly sampled from [-15, ..., 0]
+    # include_indices: [-1, 0]
+    shape: [224, 224, 3]
+
+  robot0_demo_start_pose:
+    include_indices: [0]
+    shape: [6]
+
+  robot0_eef_pos:
+    include_indices: ${eval:"ListConfig(list(range(-15, 17)))"}
+    shape: [3]
+
+  robot0_eef_rot_axis_angle:
+    include_indices: ${eval:"ListConfig(list(range(-15, 17)))"}
+    shape: [3]
+
+  robot0_gripper_width:
+    include_indices: ${eval:"ListConfig(list(range(-15, 17)))"}
+    shape: [1]
+
+output_data_meta:
+  camera0_rgb:
+    data_type: image
+    length: 8
+    normalizer: identity
+    augmentation: 
+      - name: RandomCrop
+        size: [208, 208]
+        p: 0.5
+      - name: Resize
+        size: [224, 224]
+        antialias: True
+      - name: ColorJitter
+        brightness: 0.3
+        contrast: 0.4
+        saturation: 0.5
+        hue: 0.08
+        p: 0.8
+      - name: RandomSharpness
+        sharpness: 2
+        p: 0.5
+      - name: RandomAutoContrast
+        p: 0.5
+      - name: RandomGrayscale
+        p: 0.2
+      - name: RandomGaussianBlur
+        kernel_size: [5, 5]
+        sigma: [0.1, 2.0]
+        p: 0.5
+      # - name: Normalize # Imagenet normalization for pretrained openai clip vit encoder
+      #   mean: [0.485, 0.456, 0.406]
+      #   std: [0.229, 0.224, 0.225]
+    shape: [3, 224, 224] # For pytorch compatibility
+    usage: obs
+
+  robot0_eef_pos:
+    data_type: low_dim
+    length: 32 # 16 frames into the past
+    normalizer: identity
+    augmentation: []
+    shape: [3]
+    usage: obs
+
+  robot0_eef_rot_axis_angle:
+    data_type: low_dim
+    length: 32 # 16 frames into the past
+    normalizer: identity
+    augmentation: []
+    shape: [6]
+    usage: obs
+
+  robot0_eef_rot_axis_angle_wrt_start:
+    data_type: low_dim
+    length: 32 # 16 frames into the past
+    normalizer: identity
+    augmentation: []
+    shape: [6]
+    usage: obs
+
+  robot0_gripper_width:
+    data_type: low_dim
+    length: 32 # 16 frames into the past
+    normalizer: identity
+    augmentation: []
+    shape: [1]
+    usage: obs
+
+  action:
+    data_type: low_dim
+    length: 32 # 16 frames into the future
+    normalizer: identity
+    augmentation: []
+    shape: [10]
+    usage: action
+
+  img_indices: # To store which frames are used for the current obs, ranging from -15 to 16
+    data_type: low_dim
+    length: 8
+    normalizer: identity
+    augmentation: []
+    shape: [1]
+    usage: obs
+  
+dataloader_cfg:
+  batch_size: 56
+  num_workers: 14
+  shuffle: True
+  pin_memory: True
+  persistent_workers: True

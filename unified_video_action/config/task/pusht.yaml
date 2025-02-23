@@ -1,0 +1,51 @@
+name: pusht
+task_type: single_dataset
+task_modes: []
+
+shape_meta:
+  image_resolution: 96
+  action:
+    shape:
+    - 2
+  obs:
+    agent_pos:
+      shape:
+      - 2
+      type: low_dim
+    image:
+      shape:
+      - 3
+      - 96
+      - 96
+      type: rgb
+
+dataset:
+  _target_: unified_video_action.dataset.pusht_image_dataset.PushTImageDataset
+  language_emb_model: null
+  horizon: 32
+  max_train_episodes: 90
+  pad_after: 7
+  pad_before: 1
+  seed: 42
+  val_ratio: 0.02
+  data_aug: true
+  normalizer_type: all
+  dataset_path: data/pusht/pusht_cchi_v7_replay.zarr
+  dataset_type: singletask
+
+env_runner:
+  _target_: unified_video_action.env_runner.pusht_image_runner.PushTImageRunner
+  fps: 10
+  legacy_test: true
+  max_steps: 300
+  n_action_steps: 8
+  n_envs: null
+  n_obs_steps: 16
+  n_test: 20
+  n_test_vis: 4
+  n_train: 6
+  n_train_vis: 2
+  past_action: false
+  test_start_seed: 100000
+  train_start_seed: 0
+  fix_goal: true

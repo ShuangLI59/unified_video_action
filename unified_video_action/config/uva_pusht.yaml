@@ -1,0 +1,72 @@
+name: uva
+
+defaults:
+  - _self_
+  - task: pusht
+  - model: uva
+
+dataloader:
+  batch_size: 64
+  num_workers: 8
+  persistent_workers: false
+  pin_memory: true
+  shuffle: true
+
+val_dataloader:
+  batch_size: 64
+  num_workers: 8
+  persistent_workers: false
+  pin_memory: true
+  shuffle: false
+
+training:
+  checkpoint_every: 50
+  debug: false
+  device: cuda:0
+  gradient_accumulate_every: 1
+  lr_scheduler: cosine
+  lr_warmup_steps: 1000
+  max_train_steps: null
+  max_val_steps: null
+  num_epochs: 3050
+  resume: true
+  rollout_every: 50
+  sample_every: 5
+  seed: 42
+  tqdm_interval_sec: 1.0
+  use_ema: true
+  val_every: 1
+  mixed_precision: 'fp16'
+  
+checkpoint:
+  save_last_ckpt: true
+  save_last_snapshot: false
+  topk:
+    monitor_key: test_mean_score
+    format_str: epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt
+    k: 1
+    mode: max
+
+ema:
+  _target_: unified_video_action.model.diffusion.ema_model.EMAModel
+  inv_gamma: 1.0
+  max_value: 0.9999
+  min_value: 0.0
+  power: 0.75
+  update_after_step: 0
+
+logging:
+  group: null
+  id: null
+  mode: online
+  name: train_uva_pusht
+  project: unified_video_action
+  resume: true
+  tags:
+  - train_uva_pusht
+  - pusht
+  - default
+
+multi_run:
+  run_dir: data/outputs/train_uva_pusht
+  wandb_name_base: train_uva_pusht

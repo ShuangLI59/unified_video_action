@@ -1,0 +1,69 @@
+name: libero10
+task_type: single_dataset
+task_modes: []
+
+shape_meta: &shape_meta
+  image_resolution: 128
+  action:
+    shape:
+    - 10
+  obs:
+    agentview_rgb:
+      shape:
+      - 3
+      - 128
+      - 128
+      type: rgb
+    language:
+      shape:
+      - 15
+
+shape_meta_env: &shape_meta_env
+  image_resolution: 128
+  action:
+    shape:
+    - 10
+  obs:
+    agentview_image:
+      shape:
+      - 3
+      - 128
+      - 128
+      type: rgb
+      
+dataset:
+  _target_: unified_video_action.dataset.libero_replay_image_dataset.LiberoReplayImageDataset
+  shape_meta: *shape_meta
+  abs_action: true
+  dataset_path: data/libero_10
+  language_emb_model: clip
+  horizon: 32
+  n_obs_steps: 16
+  pad_after: 7
+  pad_before: 1
+  rotation_rep: rotation_6d
+  seed: 42
+  use_cache: true
+  val_ratio: 0.02
+  data_aug: true
+  normalizer_type: all
+
+env_runner:
+  _target_: unified_video_action.env_runner.libero_image_runner.LiberoImageRunner
+  dataset_path: data/libero_10
+  abs_action: true
+  crf: 22
+  fps: 10
+  max_steps: 500
+  n_action_steps: 8
+  n_envs: null
+  n_obs_steps: 16
+  n_test: 3
+  n_test_vis: 1
+  n_train: 1
+  n_train_vis: 1
+  past_action: false
+  render_obs_key: agentview_image
+  test_start_seed: 100000
+  tqdm_interval_sec: 1.0
+  shape_meta: *shape_meta_env
