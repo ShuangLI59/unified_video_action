@@ -595,7 +595,7 @@ class MAR(nn.Module):
                 proprioception_input['pred_second_image_z'] = rearrange(proprioception_input['pred_second_image_z'], '(b t) seq_len c -> b t seq_len c', b=B) # [1, 4, 256, 16]
         
         
-        if text_latents is not None:
+        if text_latents is not None and hasattr(self, 'text_proj_cond'):
             if self.language_emb_model_type == 1:
                 text_latents = self.text_proj_cond(text_latents)
 
@@ -659,7 +659,7 @@ class MAR(nn.Module):
         # cond = self.z_proj_cond(cond)
         
         
-        if text_latents is not None:
+        if text_latents is not None and hasattr(self, 'text_proj_cond'):
             if self.language_emb_model_type == 1:
                 text_latents = self.text_proj_cond(text_latents)
 

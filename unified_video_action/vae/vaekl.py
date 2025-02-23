@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 import numpy as np
-import pdb
+import os
 
 def nonlinearity(x):
     # swish
@@ -490,7 +490,6 @@ class AutoencoderKL(nn.Module):
         return dec
 
     def forward(self, inputs, disable=True, train=True, optimizer_idx=0):
-        pdb.set_trace()
         if train:
             return self.training_step(inputs, disable, optimizer_idx)
         else:

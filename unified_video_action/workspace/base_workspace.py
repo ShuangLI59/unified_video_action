@@ -80,7 +80,7 @@ class BaseWorkspace:
         if include_keys is None:
             include_keys = payload['pickles'].keys()
             
-        if 'lr_scheduler' not in self.__dict__:
+        if 'lr_scheduler' not in self.__dict__ and 'lr_scheduler' in payload['state_dicts']:
             del payload['state_dicts']['lr_scheduler']
             
         for key, value in payload['state_dicts'].items():
