@@ -167,7 +167,6 @@ class UnifiedVideoActionPolicy(BaseImagePolicy):
         obs_dict: must include "obs" key
         result: must include "action" key
         """
-        
         obs_dict = resize_image_eval(self.task_name, obs_dict)
         B, T, C, H, W = obs_dict['image'].shape
 

@@ -161,6 +161,9 @@ class TrainUnifiedVideoActionWorkspace(BaseWorkspace):
                 self.load_checkpoint(path=lastest_ckpt_path)
 
 
+        # self.save_checkpoint()
+        # exit()
+        
         # self.ema_model = copy.deepcopy(self.model)
         
         # configure ema
