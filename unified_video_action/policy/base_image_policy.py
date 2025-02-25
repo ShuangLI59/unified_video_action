@@ -4,10 +4,13 @@ import torch.nn as nn
 from unified_video_action.model.common.module_attr_mixin import ModuleAttrMixin
 from unified_video_action.model.common.normalizer import LinearNormalizer
 
+
 class BaseImagePolicy(ModuleAttrMixin):
     # init accepts keyword argument shape_meta, see config/task/*_image.yaml
 
-    def predict_action(self, obs_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def predict_action(
+        self, obs_dict: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
         """
         obs_dict:
             str: B,To,*

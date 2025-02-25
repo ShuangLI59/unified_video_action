@@ -71,5 +71,5 @@ def reconstruct_image_output(img_array):
 
 
 def update_env_kwargs(env_kwargs, **kwargs):
-    for (k, v) in kwargs.items():
+    for k, v in kwargs.items():
         env_kwargs[k] = v

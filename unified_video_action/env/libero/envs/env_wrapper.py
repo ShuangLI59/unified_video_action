@@ -9,6 +9,7 @@ import libero.libero.envs.bddl_utils as BDDLUtils
 from libero.libero.envs import *
 import pdb
 
+
 class ControlEnv:
     def __init__(
         self,
@@ -44,7 +45,6 @@ class ControlEnv:
             bddl_file_name
         ), f"[error] {bddl_file_name} does not exist!"
 
-        
         controller_configs = suite.load_controller_config(default_controller=controller)
 
         problem_info = BDDLUtils.get_problem_info(bddl_file_name)
@@ -55,7 +55,7 @@ class ControlEnv:
         self.domain_name = problem_info["domain_name"]
         self.language_instruction = problem_info["language_instruction"]
 
-        # pdb.set_trace() 
+        # pdb.set_trace()
         self.env = TASK_MAPPING[self.problem_name](
             bddl_file_name,
             robots=robots,

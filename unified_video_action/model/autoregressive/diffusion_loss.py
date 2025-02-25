@@ -4,24 +4,35 @@ from torch.utils.checkpoint import checkpoint
 import math
 from unified_video_action.model.autoregressive.diffusion import create_diffusion
 
+
 class DiffLoss(nn.Module):
     """Diffusion Loss"""
-    def __init__(self, target_channels, z_channels, depth, width, num_sampling_steps, grad_checkpointing=False, **kwargs):
+
+    def __init__(
+        self,
+        target_channels,
+        z_channels,
+        depth,
+        width,
+        num_sampling_steps,
+        grad_checkpointing=False,
+        **kwargs
+    ):
         super(DiffLoss, self).__init__()
 
-        self.n_frames = kwargs['n_frames']
-        self.language_emb_model = kwargs['language_emb_model']
-        self.language_emb_model_type = kwargs['language_emb_model_type']
+        self.n_frames = kwargs["n_frames"]
+        self.language_emb_model = kwargs["language_emb_model"]
+        self.language_emb_model_type = kwargs["language_emb_model_type"]
         self.in_channels = target_channels
-        
-        if self.language_emb_model == 'clip' and self.language_emb_model_type == 2:
+
+        if self.language_emb_model == "clip" and self.language_emb_model_type == 2:
             self.text_proj_cond = nn.Linear(512, z_channels, bias=True)
-            
+
             self.net = SimpleMLPAdaLN(
                 in_channels=target_channels,
                 model_channels=width,
                 out_channels=target_channels * 2,  # for vlb loss
-                z_channels=z_channels*2,
+                z_channels=z_channels * 2,
                 num_res_blocks=depth,
                 grad_checkpointing=grad_checkpointing,
             )
@@ -36,29 +47,37 @@ class DiffLoss(nn.Module):
                 grad_checkpointing=grad_checkpointing,
             )
 
-        
-        self.train_diffusion = create_diffusion(timestep_respacing="", noise_schedule="cosine")
-        self.gen_diffusion = create_diffusion(timestep_respacing=num_sampling_steps, noise_schedule="cosine")
+        self.train_diffusion = create_diffusion(
+            timestep_respacing="", noise_schedule="cosine"
+        )
+        self.gen_diffusion = create_diffusion(
+            timestep_respacing=num_sampling_steps, noise_schedule="cosine"
+        )
 
-        
     def forward(self, target, z, mask=None, conf_score=None, text_latents=None):
         # different noise over t and s
         bsz, seq_len, _ = target.shape
         target = target.reshape(bsz * seq_len, -1)
-        z = z.reshape(bsz*seq_len, -1)
-        mask = mask.reshape(bsz*seq_len)
+        z = z.reshape(bsz * seq_len, -1)
+        mask = mask.reshape(bsz * seq_len)
 
-        t = torch.randint(0, self.train_diffusion.num_timesteps, (target.shape[0],), device=target.device)
+        t = torch.randint(
+            0,
+            self.train_diffusion.num_timesteps,
+            (target.shape[0],),
+            device=target.device,
+        )
 
-        
-        if self.language_emb_model == 'clip' and self.language_emb_model_type == 2:
+        if self.language_emb_model == "clip" and self.language_emb_model_type == 2:
             text_latents = self.text_proj_cond(text_latents)
             text_latents = text_latents.unsqueeze(1).expand(-1, seq_len, -1)
             text_latents = text_latents.reshape(bsz * seq_len, -1)
             z = torch.cat([z, text_latents], dim=-1)
-            
+
         model_kwargs = dict(c=z)
-        loss_dict = self.train_diffusion.training_losses(self.net, target, t, model_kwargs)
+        loss_dict = self.train_diffusion.training_losses(
+            self.net, target, t, model_kwargs
+        )
         loss = loss_dict["loss"]
 
         if mask is not None:
@@ -66,14 +85,14 @@ class DiffLoss(nn.Module):
         return loss.mean()
 
     def sample(self, z, temperature=1.0, cfg=1.0, text_latents=None):
-        if self.language_emb_model == 'clip' and self.language_emb_model_type == 2:
+        if self.language_emb_model == "clip" and self.language_emb_model_type == 2:
             bs = text_latents.shape[0]
             seq_len = z.shape[0] // bs
             text_latents = self.text_proj_cond(text_latents)
             text_latents = text_latents.unsqueeze(1).expand(-1, seq_len, -1)
             text_latents = text_latents.reshape(bs * seq_len, -1)
             z = torch.cat([z, text_latents], dim=-1)
-            
+
         # diffusion loss sampling
         if not cfg == 1.0:
             noise = torch.randn(z.shape[0] // 2, self.in_channels).cuda()
@@ -86,8 +105,13 @@ class DiffLoss(nn.Module):
             sample_fn = self.net.forward
 
         sampled_token_latent = self.gen_diffusion.p_sample_loop(
-            sample_fn, noise.shape, noise, clip_denoised=False, model_kwargs=model_kwargs, progress=False,
-            temperature=temperature
+            sample_fn,
+            noise.shape,
+            noise,
+            clip_denoised=False,
+            model_kwargs=model_kwargs,
+            progress=False,
+            temperature=temperature,
         )
 
         return sampled_token_latent
@@ -101,6 +125,7 @@ class TimestepEmbedder(nn.Module):
     """
     Embeds scalar timesteps into vector representations.
     """
+
     def __init__(self, hidden_size, frequency_embedding_size=256):
         super().__init__()
         self.mlp = nn.Sequential(
@@ -123,12 +148,16 @@ class TimestepEmbedder(nn.Module):
         # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
         half = dim // 2
         freqs = torch.exp(
-            -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half
+            -math.log(max_period)
+            * torch.arange(start=0, end=half, dtype=torch.float32)
+            / half
         ).to(device=t.device)
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if dim % 2:
-            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
+            embedding = torch.cat(
+                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
+            )
         return embedding
 
     def forward(self, t):
@@ -143,10 +172,7 @@ class ResBlock(nn.Module):
     :param channels: the number of input channels.
     """
 
-    def __init__(
-        self,
-        channels
-    ):
+    def __init__(self, channels):
         super().__init__()
         self.channels = channels
 
@@ -158,8 +184,7 @@ class ResBlock(nn.Module):
         )
 
         self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(channels, 3 * channels, bias=True)
+            nn.SiLU(), nn.Linear(channels, 3 * channels, bias=True)
         )
 
     def forward(self, x, y):
@@ -173,13 +198,15 @@ class FinalLayer(nn.Module):
     """
     The final layer adopted from DiT.
     """
+
     def __init__(self, model_channels, out_channels):
         super().__init__()
-        self.norm_final = nn.LayerNorm(model_channels, elementwise_affine=False, eps=1e-6)
+        self.norm_final = nn.LayerNorm(
+            model_channels, elementwise_affine=False, eps=1e-6
+        )
         self.linear = nn.Linear(model_channels, out_channels, bias=True)
         self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(model_channels, 2 * model_channels, bias=True)
+            nn.SiLU(), nn.Linear(model_channels, 2 * model_channels, bias=True)
         )
 
     def forward(self, x, c):
@@ -206,10 +233,10 @@ class SimpleMLPAdaLN(nn.Module):
         out_channels,
         z_channels,
         num_res_blocks,
-        grad_checkpointing=False
+        grad_checkpointing=False,
     ):
         super().__init__()
-        
+
         self.in_channels = in_channels
         self.model_channels = model_channels
         self.out_channels = out_channels
@@ -223,9 +250,11 @@ class SimpleMLPAdaLN(nn.Module):
 
         res_blocks = []
         for i in range(num_res_blocks):
-            res_blocks.append(ResBlock(
-                model_channels,
-            ))
+            res_blocks.append(
+                ResBlock(
+                    model_channels,
+                )
+            )
 
         self.res_blocks = nn.ModuleList(res_blocks)
         self.final_layer = FinalLayer(model_channels, out_channels)
@@ -238,6 +267,7 @@ class SimpleMLPAdaLN(nn.Module):
                 torch.nn.init.xavier_uniform_(module.weight)
                 if module.bias is not None:
                     nn.init.constant_(module.bias, 0)
+
         self.apply(_basic_init)
 
         # Initialize timestep embedding MLP
@@ -263,8 +293,7 @@ class SimpleMLPAdaLN(nn.Module):
         :param c: conditioning from AR transformer.
         :return: an [N x C] Tensor of outputs.
         """
-        
-        
+
         x = self.input_proj(x)
         t = self.time_embed(t)
         c = self.cond_embed(c)
@@ -284,11 +313,8 @@ class SimpleMLPAdaLN(nn.Module):
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
         model_out = self.forward(combined, t, c)
-        eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
+        eps, rest = model_out[:, : self.in_channels], model_out[:, self.in_channels :]
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
-
-
-

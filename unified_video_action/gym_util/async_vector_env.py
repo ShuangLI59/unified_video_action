@@ -4,7 +4,6 @@ Disabled auto-reset after done
 Added render method.
 """
 
-
 import numpy as np
 import multiprocessing as mp
 import time
@@ -94,7 +93,6 @@ class AsyncVectorEnv(VectorEnv):
         self.env_fns = env_fns
         self.shared_memory = shared_memory
         self.copy = copy
-
 
         # Added dummy_env_fn to fix OpenGL error in Mujoco
         # disable any OpenGL rendering in dummy_env_fn, since it
@@ -401,7 +399,7 @@ class AsyncVectorEnv(VectorEnv):
 
         logger.error("Raising the last exception back to the main process.")
         raise exctype(value)
-    
+
     def call_async(self, name: str, *args, **kwargs):
         """Calls the method with name asynchronously and apply args and kwargs to the method.
 
@@ -426,7 +424,7 @@ class AsyncVectorEnv(VectorEnv):
             pipe.send(("_call", (name, args, kwargs)))
         self._state = AsyncState.WAITING_CALL
 
-    def call_wait(self, timeout = None) -> list:
+    def call_wait(self, timeout=None) -> list:
         """Calls all parent pipes and waits for the results.
 
         Args:
@@ -472,14 +470,11 @@ class AsyncVectorEnv(VectorEnv):
         """
         self.call_async(name, *args, **kwargs)
         return self.call_wait()
-    
 
-    def call_each(self, name: str, 
-            args_list: list=None, 
-            kwargs_list: list=None, 
-            timeout = None):
-        
-        
+    def call_each(
+        self, name: str, args_list: list = None, kwargs_list: list = None, timeout=None
+    ):
+
         n_envs = len(self.parent_pipes)
         if args_list is None:
             args_list = [[]] * n_envs
@@ -522,7 +517,6 @@ class AsyncVectorEnv(VectorEnv):
 
         return results
 
-
     def set_attr(self, name: str, values):
         """Sets an attribute of the sub-environments.
 
@@ -559,8 +553,7 @@ class AsyncVectorEnv(VectorEnv):
         self._raise_if_errors(successes)
 
     def render(self, *args, **kwargs):
-        return self.call('render', *args, **kwargs)
-
+        return self.call("render", *args, **kwargs)
 
 
 def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):

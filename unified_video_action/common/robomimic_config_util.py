@@ -7,13 +7,11 @@ from robomimic.scripts.generate_paper_configs import (
     modify_config_for_dataset,
 )
 
+
 def get_robomimic_config(
-        algo_name='bc_rnn', 
-        hdf5_type='low_dim', 
-        task_name='square', 
-        dataset_type='ph'
-    ):
-    base_dataset_dir = '/tmp/null'
+    algo_name="bc_rnn", hdf5_type="low_dim", task_name="square", dataset_type="ph"
+):
+    base_dataset_dir = "/tmp/null"
     filter_key = None
 
     # decide whether to use low-dim or image training defaults
@@ -27,21 +25,19 @@ def get_robomimic_config(
     config = modifier_for_obs(config)
     # add in config based on the dataset
     config = modify_config_for_dataset(
-        config=config, 
-        task_name=task_name, 
-        dataset_type=dataset_type, 
-        hdf5_type=hdf5_type, 
+        config=config,
+        task_name=task_name,
+        dataset_type=dataset_type,
+        hdf5_type=hdf5_type,
         base_dataset_dir=base_dataset_dir,
         filter_key=filter_key,
     )
     # add in algo hypers based on dataset
-    algo_config_modifier = getattr(gpc, f'modify_{algo_name}_config_for_dataset')
+    algo_config_modifier = getattr(gpc, f"modify_{algo_name}_config_for_dataset")
     config = algo_config_modifier(
-        config=config, 
-        task_name=task_name, 
-        dataset_type=dataset_type, 
+        config=config,
+        task_name=task_name,
+        dataset_type=dataset_type,
         hdf5_type=hdf5_type,
     )
     return config
-    
-

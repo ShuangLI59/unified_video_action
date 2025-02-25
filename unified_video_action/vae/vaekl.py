@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 import os
 
+
 def nonlinearity(x):
     # swish
     return x * torch.sigmoid(x)
@@ -448,12 +449,19 @@ class DiagonalGaussianDistribution(object):
 
 
 class AutoencoderKL(nn.Module):
-    def __init__(self, autoencoder_path, ddconfig, use_variational=True, output_dir=None, **kwargs):
+    def __init__(
+        self,
+        autoencoder_path,
+        ddconfig,
+        use_variational=True,
+        output_dir=None,
+        **kwargs,
+    ):
         super().__init__()
 
         embed_dim = ddconfig.vae_embed_dim
         ch_mult = ddconfig.ch_mult
-        
+
         self.encoder = Encoder(ch_mult=ch_mult, z_channels=embed_dim)
         self.decoder = Decoder(ch_mult=ch_mult, z_channels=embed_dim)
         self.use_variational = use_variational
@@ -461,20 +469,20 @@ class AutoencoderKL(nn.Module):
         self.quant_conv = torch.nn.Conv2d(2 * embed_dim, mult * embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(embed_dim, embed_dim, 1)
         self.embed_dim = embed_dim
-        if autoencoder_path is not None:
+        if autoencoder_path is not None and os.path.exists(autoencoder_path):
             self.init_from_ckpt(autoencoder_path)
 
     def init_from_ckpt(self, path):
         sd = torch.load(path, map_location="cpu")["model"]
         msg = self.load_state_dict(sd, strict=False)
-        print('-------------------------------------------------------------------')
+        print("-------------------------------------------------------------------")
         print("Loading pre-trained KL-VAE")
         print("Missing keys:")
         print(msg.missing_keys)
         print("Unexpected keys:")
         print(msg.unexpected_keys)
         print(f"Restored from {path}")
-        print('-------------------------------------------------------------------')
+        print("-------------------------------------------------------------------")
 
     def encode(self, x):
         h = self.encoder(x)

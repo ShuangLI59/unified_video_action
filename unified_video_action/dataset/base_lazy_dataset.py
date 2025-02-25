@@ -628,7 +628,9 @@ class BaseLazyDataset(Dataset[batch_type]):
         ) / len(unused_dataset.include_episode_indices)
         unused_dataset._check_data_validity()
         unused_dataset._create_index_pool()
-        assert len(unused_dataset) >= 1, f"Splitted dataset {unused_dataset.name} has no data. Please check the used_data_ratio and the overall dataset size"
+        assert (
+            len(unused_dataset) >= 1
+        ), f"Splitted dataset {unused_dataset.name} has no data. Please check the used_data_ratio and the overall dataset size"
         return unused_dataset
 
     def get_dataloader(self):

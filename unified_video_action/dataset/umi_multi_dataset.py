@@ -8,9 +8,10 @@ from torch.utils.data import DataLoader, Dataset
 from unified_video_action.dataset.base_lazy_dataset import BaseLazyDataset, batch_type
 from unified_video_action.dataset.umi_lazy_dataset import UmiLazyDataset
 from unified_video_action.utils.language_model import get_text_model
-from types import SimpleNamespace
+import numpy as np
 from copy import deepcopy
 import pdb
+
 
 class UmiMultiDataset(Dataset[batch_type]):
     """
@@ -91,13 +92,17 @@ class UmiMultiDataset(Dataset[batch_type]):
         """
         self._create_index_pool()
 
+        seed = 42
+        self.rng: np.random.Generator = np.random.default_rng(seed)
         self.language_emb_model = language_emb_model
-        self.language_latents: dict[str, torch.Tensor] = {}
+        self.language_latents: dict[str, list[torch.Tensor]] = {
+            "cup_arrangement_0": [],
+            "towel_folding_0": [],
+            "mouse_arrangement_0": [],
+        }
 
         if self.language_emb_model is not None:
             self.get_language_latent()
-
-        
 
     def _create_index_pool(self):
         self.index_pool = []
@@ -111,21 +116,117 @@ class UmiMultiDataset(Dataset[batch_type]):
         dataset_idx, data_idx = self.index_pool[idx]
         data_dict = self.datasets[dataset_idx][data_idx]
         data_dict["ids"] = torch.tensor([idx])
-        data_dict["language_latents"] = self.language_latents[data_dict["dataset_name"]]
+        data_dict["language_latents"] = self.rng.choice(
+            self.language_latents[data_dict["dataset_name"]], size=1, replace=False
+        )[0]
         del data_dict["dataset_name"]
         return data_dict
-    
+
     def get_language_latent(self):
-        language_goals = {'cup_arrangement_0': 'pick up an espresso cup and place it onto a saucer with the cup handle oriented to the left of the robot',
-                            'towel_folding_0': 'grasp the left edge of the towel and move it to the right, folding it in half',
-                            'mouse_arrangement_0': 'pick up the mouse and place it on the mouse pad'}
-        
-        self.text_model, self.tokenizer, max_length = get_text_model('umi', self.language_emb_model)
-    
-        with torch.no_grad():    
+        # language_goals = {'cup_arrangement_0': 'pick up an espresso cup and place it onto a saucer with the cup handle oriented to the left of the robot',
+        #                     'towel_folding_0': 'grasp the left edge of the towel and move it to the right, folding it in half',
+        #                     'mouse_arrangement_0': 'pick up the mouse and place it on the mouse pad'}
+
+        language_goals = {
+            "cup_arrangement_0": [
+                "Pick up an espresso cup and place it onto a saucer with the cup handle oriented to the left of the robot.",
+                "Grasp the espresso cup delicately and set it on the saucer, ensuring its handle points to the robot's left.",
+                "Lift the small cup and carefully position it on the saucer so that the handle faces left relative to the robot.",
+                "Take hold of the espresso cup and gently deposit it onto the saucer, aligning the handle to the left side of the robot.",
+                "Place the cup on the saucer with precision, making sure the handle is directed towards the left side of the robot.",
+                "Securely pick up the espresso cup and carefully set it down on the saucer with its handle turned leftward.",
+                "Gently lift the cup and rest it on the saucer, ensuring the handle points left from the robot's perspective.",
+                "Handle the espresso cup with care and place it onto the saucer so that its handle faces to the left of the robot.",
+                "Lift the cup and position it on the saucer, orienting the handle to face left relative to the robot.",
+                "Pick up the espresso cup and place it onto the saucer.",
+                "Grasp the cup and set it on the saucer.",
+                "Grab cup and put it on saucer.",
+                "Lift the cup and deposit it onto the saucer.",
+                "Take the cup and rest it on the saucer.",
+                "Hold the cup, then place it on the saucer.",
+                "Retrieve the cup and place it neatly on the saucer.",
+                "Grab the cup, position it on the saucer.",
+                "Lift the cup and align it on the saucer.",
+                "Secure the cup and gently set it on the saucer.",
+                "Pick up the cup, then carefully put it on the saucer.",
+                "Take the espresso cup and set it on the saucer.",
+            ],
+            "towel_folding_0": [
+                "Grasp the left edge of the towel and move it to the right, folding it in half.",
+                "Hold the towel by its left side and slide it over to the right, creating a neat, even fold.",
+                "Seize the left corner of the towel and pull it rightward to achieve a clean, symmetrical fold.",
+                "Take the left edge of the towel and shift it to the right, thereby folding it into two equal parts.",
+                "Grab the left side of the towel and fold it over to the right.",
+                "Lift the towel from the left and fold it neatly towards the right.",
+                "Pick up the towel by its left edge and bring it over to the right to fold it.",
+                "Secure the left side of the towel and move it rightward, resulting in a tidy fold.",
+                "Fold the towel by grabbing its left side and moving it across to the right.",
+                "Take the left portion of the towel and fold it over, forming a perfect half.",
+                "Grab the towel’s left side and fold it toward the right side for a smooth fold.",
+                "Clasp the left end of the towel and swing it to the right, folding it in half.",
+                "Fold the towel.",
+                "Fold towel neatly.",
+                "Fold the towel over.",
+                "Fold towel in half.",
+                "Fold towel to the right.",
+                "Fold left side of towel.",
+                "Fold towel from left to right.",
+                "Evenly fold towel.",
+                "Fold towel quickly.",
+                "Swiftly fold towel.",
+            ],
+            "mouse_arrangement_0": [
+                "Pick up the mouse and place it on the mouse pad.",
+                "Grasp the computer mouse and set it down carefully on its mouse pad.",
+                "Lift the mouse and gently position it on the designated mouse pad.",
+                "Take hold of the mouse and accurately rest it on the mouse pad.",
+                "Grab the mouse and put it on the mouse pad.",
+                "Lift the mouse and set it neatly on the mouse pad.",
+                "Carefully pick up the mouse and deposit it on the mouse pad.",
+                "Place the mouse on the pad with precision.",
+                "Move the mouse to the mouse pad.",
+                "Securely grasp the mouse and lay it on the mouse pad.",
+                "Set the mouse down on the mouse pad.",
+                "Align the mouse with the mouse pad.",
+                "Place the computer mouse onto the pad.",
+                "Position the mouse accurately on the mouse pad.",
+                "Gently pick up the mouse and rest it on the pad.",
+                "Lift the computer mouse and slide it onto the mouse pad.",
+                "Grasp the mouse and accurately position it on the pad.",
+                "Pick up the mouse and place it correctly on the mouse pad.",
+                "Carefully retrieve the mouse and set it on its pad.",
+                "Grab the mouse and align it with the mouse pad.",
+                "Put mouse on pad.",
+                "Move mouse to pad.",
+                "Set mouse on pad.",
+                "Place mouse on pad.",
+                "Rest mouse on pad.",
+                "Position mouse on pad.",
+                "Slide mouse onto pad.",
+                "Shift mouse to pad.",
+                "Deposit mouse on pad.",
+                "Lay mouse on pad.",
+                "Pick up mouse and set on pad.",
+                "Grab mouse and place on pad.",
+            ],
+        }
+
+        self.text_model, self.tokenizer, max_length = get_text_model(
+            "umi", self.language_emb_model
+        )
+
+        with torch.no_grad():
             for dataset_name, language_goal in language_goals.items():
-                language_tokens = self.tokenizer([language_goal], padding='max_length', max_length=max_length, return_tensors="pt")
-                self.language_latents[dataset_name] = self.text_model.get_text_features(**language_tokens)[0]
+                for language_goal_text in language_goal:
+                    language_tokens = self.tokenizer(
+                        [language_goal_text],
+                        padding="max_length",
+                        max_length=max_length,
+                        return_tensors="pt",
+                    )
+                    self.language_latents[dataset_name].append(
+                        self.text_model.get_text_features(**language_tokens)[0]
+                    )
 
     def split_unused_episodes(
         self,
@@ -139,9 +240,7 @@ class UmiMultiDataset(Dataset[batch_type]):
             unused_single_dataset = dataset.split_unused_episodes(
                 remaining_ratio, other_used_episode_indices
             )
-            unused_dataset.datasets.append(
-                unused_single_dataset
-            )
+            unused_dataset.datasets.append(unused_single_dataset)
         unused_dataset._create_index_pool()
 
         return unused_dataset
@@ -153,11 +252,11 @@ class UmiMultiDataset(Dataset[batch_type]):
     def transforms(self):
         """Return the transforms of the first dataset. Assuming all datasets have the same transforms."""
         return self.datasets[0].transforms
-    
+
     @property
     def apply_augmentation_in_cpu(self):
         return self.datasets[0].apply_augmentation_in_cpu
-    
+
     def set_datasets_attribute(self, attribute_name: str, attribute_value: Any):
         for dataset in self.datasets:
             setattr(dataset, attribute_name, attribute_value)

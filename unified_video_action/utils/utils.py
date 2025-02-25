@@ -1,4 +1,3 @@
-
 import os
 import random
 import shutil
@@ -20,7 +19,7 @@ class Logger(object):
 
         logdir = self._make_dir(fn)
         self.eval = eval
-        
+
         if not os.path.exists(logdir):
             os.mkdir(logdir)
 
@@ -31,32 +30,32 @@ class Logger(object):
 
     def _make_dir(self, fn):
         # today = datetime.today().strftime("%y%m%d")
-        logdir = f'./results/{fn}/'
+        logdir = f"./results/{fn}/"
         return logdir
 
-    def set_dir(self, logdir, log_fn='log.txt'):
+    def set_dir(self, logdir, log_fn="log.txt"):
         self.logdir = logdir
         if not os.path.exists(logdir):
             os.mkdir(logdir)
 
         if self.eval:
-            log_fn = 'eval_' + log_fn
+            log_fn = "eval_" + log_fn
         else:
             self.writer = SummaryWriter(logdir)
-        self.log_file = open(os.path.join(logdir, log_fn), 'a')
+        self.log_file = open(os.path.join(logdir, log_fn), "a")
 
     def log(self, string):
-        self.log_file.write('[%s] %s' % (datetime.now(), string) + '\n')
+        self.log_file.write("[%s] %s" % (datetime.now(), string) + "\n")
         self.log_file.flush()
 
-        print('[%s] %s' % (datetime.now(), string))
+        print("[%s] %s" % (datetime.now(), string))
         sys.stdout.flush()
 
     def log_dirname(self, string):
-        self.log_file.write('%s (%s)' % (string, self.logdir) + '\n')
+        self.log_file.write("%s (%s)" % (string, self.logdir) + "\n")
         self.log_file.flush()
 
-        print('%s (%s)' % (string, self.logdir))
+        print("%s (%s)" % (string, self.logdir))
         sys.stdout.flush()
 
     def scalar_summary(self, tag, value, step):
@@ -72,7 +71,7 @@ class Logger(object):
 
     def histo_summary(self, tag, values, step):
         """Log a histogram of the tensor of values."""
-        self.writer.add_histogram(tag, values, step, bins='auto')
+        self.writer.add_histogram(tag, values, step, bins="auto")
 
 
 class AverageMeter(object):
@@ -106,8 +105,8 @@ def set_random_seed(seed):
 
 
 def file_name(args):
-    fn = f'{args.exp}_{args.id}_{args.data}'
-    fn += f'_{args.seed}'
+    fn = f"{args.exp}_{args.id}_{args.data}"
+    fn += f"_{args.seed}"
     return fn
 
 
@@ -117,7 +116,8 @@ def psnr(mse):
     """
     return -10.0 * mse.log10()
 
-def download(id, fname, root=os.path.expanduser('~/.cache/video-diffusion')):
+
+def download(id, fname, root=os.path.expanduser("~/.cache/video-diffusion")):
     os.makedirs(root, exist_ok=True)
     destination = os.path.join(root, fname)
 
@@ -130,13 +130,25 @@ def download(id, fname, root=os.path.expanduser('~/.cache/video-diffusion')):
 
 def make_pairs(l, t1, t2, num_pairs, given_vid):
     B, T, C, H, W = given_vid.size()
-    idx1 = t1.view(B, num_pairs, 1, 1, 1, 1).expand(B, num_pairs, 1, C, H, W).type(torch.int64)
-    frame1 = torch.gather(given_vid.unsqueeze(1).repeat(1,num_pairs, 1,1,1,1), 2, idx1).squeeze()
-    t1 = t1.float() / (l - 1) 
+    idx1 = (
+        t1.view(B, num_pairs, 1, 1, 1, 1)
+        .expand(B, num_pairs, 1, C, H, W)
+        .type(torch.int64)
+    )
+    frame1 = torch.gather(
+        given_vid.unsqueeze(1).repeat(1, num_pairs, 1, 1, 1, 1), 2, idx1
+    ).squeeze()
+    t1 = t1.float() / (l - 1)
 
-    idx2 = t2.view(B, num_pairs, 1, 1, 1, 1).expand(B, num_pairs, 1, C, H, W).type(torch.int64)
-    frame2 = torch.gather(given_vid.unsqueeze(1).repeat(1,num_pairs,1,1,1,1), 2, idx2).squeeze()
-    t2 = t2.float() / (l - 1) 
+    idx2 = (
+        t2.view(B, num_pairs, 1, 1, 1, 1)
+        .expand(B, num_pairs, 1, C, H, W)
+        .type(torch.int64)
+    )
+    frame2 = torch.gather(
+        given_vid.unsqueeze(1).repeat(1, num_pairs, 1, 1, 1, 1), 2, idx2
+    ).squeeze()
+    t2 = t2.float() / (l - 1)
 
     frame1 = frame1.view(-1, C, H, W)
     frame2 = frame2.view(-1, C, H, W)
@@ -146,7 +158,7 @@ def make_pairs(l, t1, t2, num_pairs, given_vid):
     t2 = t2.view(-1, 1, 1, 1).repeat(1, C, H, W)
 
     ret_frame1 = torch.where(t1 < t2, frame1, frame2)
-    ret_frame2 = torch.where(t1 < t2, frame2 ,frame1)
+    ret_frame2 = torch.where(t1 < t2, frame2, frame1)
 
     t1 = t1[:, 0:1]
     t2 = t2[:, 0:1]
@@ -158,23 +170,23 @@ def make_pairs(l, t1, t2, num_pairs, given_vid):
 
     return torch.cat([ret_frame1, ret_frame2, dt], dim=1)
 
+
 def make_mixed_pairs(l, t1, t2, given_vid_real, given_vid_fake):
     B, T, C, H, W = given_vid_real.size()
     idx1 = t1.view(-1, 1, 1, 1, 1).expand(B, 1, C, H, W).type(torch.int64)
     frame1 = torch.gather(given_vid_real, 1, idx1).squeeze()
-    t1 = t1.float() / (l - 1) 
+    t1 = t1.float() / (l - 1)
 
     idx2 = t2.view(-1, 1, 1, 1, 1).expand(B, 1, C, H, W).type(torch.int64)
     frame2 = torch.gather(given_vid_fake, 1, idx2).squeeze()
-    t2 = t2.float() / (l - 1) 
-
+    t2 = t2.float() / (l - 1)
 
     # sort by t
     t1 = t1.view(-1, 1, 1, 1).repeat(1, C, H, W)
     t2 = t2.view(-1, 1, 1, 1).repeat(1, C, H, W)
 
     ret_frame1 = torch.where(t1 < t2, frame1, frame2)
-    ret_frame2 = torch.where(t1 < t2, frame2 ,frame1)
+    ret_frame2 = torch.where(t1 < t2, frame2, frame1)
 
     t1 = t1[:, 0:1]
     t2 = t2[:, 0:1]
@@ -185,4 +197,3 @@ def make_mixed_pairs(l, t1, t2, given_vid_real, given_vid_fake):
     dt = ret_t2 - ret_t1
 
     return torch.cat([ret_frame1, ret_frame2, dt], dim=1)
-

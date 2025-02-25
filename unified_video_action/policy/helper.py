@@ -14,7 +14,7 @@ class ResidualBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 3, 1, 1),
             GroupNorm(out_channels),
             Swish(),
-            nn.Conv2d(out_channels, out_channels, 3, 1, 1)
+            nn.Conv2d(out_channels, out_channels, 3, 1, 1),
         )
         if in_channels != out_channels:
             self.channel_up = nn.Conv2d(in_channels, out_channels, 1, 1, 0)
@@ -32,7 +32,7 @@ class UpSampleBlock(nn.Module):
         self.conv = nn.Conv2d(channels, channels, 3, 1, 1)
 
     def forward(self, x):
-        x = F.interpolate(x, scale_factor=2.)
+        x = F.interpolate(x, scale_factor=2.0)
         return self.conv(x)
 
 
@@ -87,7 +87,9 @@ class NonLocalBlock(nn.Module):
 class GroupNorm(nn.Module):
     def __init__(self, in_channels):
         super(GroupNorm, self).__init__()
-        self.gn = nn.GroupNorm(num_groups=32, num_channels=in_channels, eps=1e-6, affine=True)
+        self.gn = nn.GroupNorm(
+            num_groups=32, num_channels=in_channels, eps=1e-6, affine=True
+        )
 
     def forward(self, x):
         return self.gn(x)

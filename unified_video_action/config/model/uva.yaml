@@ -9,7 +9,6 @@ policy:
   use_history_action: null
   action_mask_ratio: 0.5
   different_history_freq: null
-  flag_different_freq_and_interval: null
   predict_wrist_img: null
   predict_proprioception: null
   shape_meta: ${task.shape_meta}
@@ -21,7 +20,7 @@ policy:
       ch_mult: [1, 1, 2, 2, 4]
 
   autoregressive_model_params:
-    pretrained_model_path: null
+    pretrained_model_path: 'pretrained_models/mar/mar_base/checkpoint-last.pth'
     model_size: mar_base
     img_size: 256
     vae_stride: 16
@@ -49,12 +48,10 @@ policy:
     act_diff_training_steps: 1000
     act_diff_testing_steps: "100"
     
-  
   action_model_params:
     predict_action: False
     act_model_type: conv_fc
   
-  # ddpm_solver: ddpm_avdc
   shift_action: True
     
   optimizer:

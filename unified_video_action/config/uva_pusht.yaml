@@ -6,21 +6,21 @@ defaults:
   - model: uva
 
 dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 8
   persistent_workers: false
   pin_memory: true
   shuffle: true
 
 val_dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 8
   persistent_workers: false
   pin_memory: true
   shuffle: false
 
 training:
-  checkpoint_every: 50
+  checkpoint_every: 10
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -30,7 +30,7 @@ training:
   max_val_steps: null
   num_epochs: 3050
   resume: true
-  rollout_every: 50
+  rollout_every: 10
   sample_every: 5
   seed: 42
   tqdm_interval_sec: 1.0
@@ -48,7 +48,7 @@ checkpoint:
     mode: max
 
 ema:
-  _target_: unified_video_action.model.diffusion.ema_model.EMAModel
+  _target_: unified_video_action.model.autoregressive.ema_model.EMAModel
   inv_gamma: 1.0
   max_value: 0.9999
   min_value: 0.0

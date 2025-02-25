@@ -1,5 +1,6 @@
 import functools
 
+
 def nested_dict_map(f, x):
     """
     Map f over all leaf of nested dict x
@@ -11,6 +12,7 @@ def nested_dict_map(f, x):
     for key, value in x.items():
         y[key] = nested_dict_map(f, value)
     return y
+
 
 def nested_dict_reduce(f, x):
     """

@@ -105,6 +105,6 @@ dataset:
   data_aug: false
   language_emb_model: null
   sampler_name: SequenceSamplerUMIMy
-  normalizer_type: all
+  normalizer_type: none
   no_mirror: false
   num_data: null

@@ -8,164 +8,167 @@ import torch
 import threading
 import pdb
 
+
 class BaseWorkspace:
     include_keys = tuple()
     exclude_keys = tuple()
 
-    def __init__(self, cfg: OmegaConf, output_dir: Optional[str]=None):
+    def __init__(self, cfg: OmegaConf, output_dir: Optional[str] = None):
         self.cfg = cfg
         self._output_dir = output_dir
         self._saving_thread = None
-        
+
     @property
     def output_dir(self):
         output_dir = self._output_dir
         if output_dir is None:
             output_dir = HydraConfig.get().runtime.output_dir
         return output_dir
-    
+
     def run(self):
         """
         Create any resource shouldn't be serialized as local variables
         """
         pass
 
-    def save_checkpoint(self, path=None, tag='latest', 
-            exclude_keys=None,
-            include_keys=None,
-            use_thread=True):
-        
+    def save_checkpoint(
+        self,
+        path=None,
+        tag="latest",
+        exclude_keys=None,
+        include_keys=None,
+        use_thread=True,
+    ):
+
         if path is None:
-            path = pathlib.Path(self.output_dir).joinpath('checkpoints', f'{tag}.ckpt')
+            path = pathlib.Path(self.output_dir).joinpath("checkpoints", f"{tag}.ckpt")
         else:
             path = pathlib.Path(path)
         if exclude_keys is None:
             exclude_keys = tuple(self.exclude_keys)
         if include_keys is None:
-            include_keys = tuple(self.include_keys) + ('_output_dir',)
-        
+            include_keys = tuple(self.include_keys) + ("_output_dir",)
+
         path.parent.mkdir(parents=False, exist_ok=True)
-        payload = {
-            'cfg': self.cfg,
-            'state_dicts': dict(),
-            'pickles': dict()
-        } 
-        
+        payload = {"cfg": self.cfg, "state_dicts": dict(), "pickles": dict()}
+
         for key, value in self.__dict__.items():
-            if hasattr(value, 'state_dict') and hasattr(value, 'load_state_dict'):
+            if hasattr(value, "state_dict") and hasattr(value, "load_state_dict"):
                 # modules, optimizers and samplers etc
                 if key not in exclude_keys:
                     if use_thread:
-                        payload['state_dicts'][key] = _copy_to_cpu(value.state_dict())
+                        payload["state_dicts"][key] = _copy_to_cpu(value.state_dict())
                     else:
-                        payload['state_dicts'][key] = value.state_dict()
+                        payload["state_dicts"][key] = value.state_dict()
             elif key in include_keys:
-                payload['pickles'][key] = dill.dumps(value)
-        
+                payload["pickles"][key] = dill.dumps(value)
+
         if use_thread:
-            self._saving_thread = threading.Thread(target=lambda : torch.save(payload, path.open('wb')))
+            self._saving_thread = threading.Thread(
+                target=lambda: torch.save(payload, path.open("wb"))
+            )
             self._saving_thread.start()
         else:
-            payload_cpu = {key: value.cpu() if isinstance(value, torch.Tensor) else value for key, value in payload.items()}
-            torch.save(payload_cpu, path.open('wb'))
-        
+            payload_cpu = {
+                key: value.cpu() if isinstance(value, torch.Tensor) else value
+                for key, value in payload.items()
+            }
+            torch.save(payload_cpu, path.open("wb"))
+
         return str(path.absolute())
-    
-    def get_checkpoint_path(self, tag='latest'):
-        return pathlib.Path(self.output_dir).joinpath('checkpoints', f'{tag}.ckpt')
+
+    def get_checkpoint_path(self, tag="latest"):
+        return pathlib.Path(self.output_dir).joinpath("checkpoints", f"{tag}.ckpt")
 
     def load_payload(self, payload, exclude_keys=None, include_keys=None, **kwargs):
         if exclude_keys is None:
             exclude_keys = tuple()
         if include_keys is None:
-            include_keys = payload['pickles'].keys()
-            
+            include_keys = payload["pickles"].keys()
 
-        if 'lr_scheduler' not in self.__dict__ and 'lr_scheduler' in payload['state_dicts']:
-            del payload['state_dicts']['lr_scheduler']
-            
-        for key, value in payload['state_dicts'].items():
+        if (
+            "lr_scheduler" not in self.__dict__
+            and "lr_scheduler" in payload["state_dicts"]
+        ):
+            del payload["state_dicts"]["lr_scheduler"]
+
+        for key, value in payload["state_dicts"].items():
             if key not in exclude_keys:
                 value_new = {}
                 for k, v in value.items():
-                    if 'module' in k:
-                        value_new[k.replace('module.', '')] = value[k]
+                    if "module" in k:
+                        value_new[k.replace("module.", "")] = value[k]
                     else:
                         value_new[k] = value[k]
                 try:
                     if key == "optimizer" and "base_optimizer_state" in value_new:
                         # value_new = value_new["base_optimizer_state"]
-                        continue # HACK: optimizer state is not compatible with multi-node training. Should use accelerate.load_state
+                        continue  # HACK: optimizer state is not compatible with multi-node training. Should use accelerate.load_state
                     self.__dict__[key].load_state_dict(value_new, **kwargs)
                 except Exception as e:
                     print(f"{key=}, {value_new.keys()=}, {value_new=}, {kwargs=}")
                     raise e
 
-        
-        
-        if 'model' not in payload['state_dicts']:
-            print('loading checkpoint, use ema model for model')
-            value = payload['state_dicts']['ema_model']
+        if "model" not in payload["state_dicts"]:
+            print("loading checkpoint, use ema model for model")
+            value = payload["state_dicts"]["ema_model"]
             value_new = {}
             for k, v in value.items():
-                if 'module' in k:
-                    value_new[k.replace('module.', '')] = value[k]
+                if "module" in k:
+                    value_new[k.replace("module.", "")] = value[k]
                 else:
                     value_new[k] = value[k]
-            self.__dict__['model'].load_state_dict(value_new, **kwargs)
+            self.__dict__["model"].load_state_dict(value_new, **kwargs)
 
         for key in include_keys:
-            if key in payload['pickles']:
-                self.__dict__[key] = dill.loads(payload['pickles'][key])
-    
-    def load_checkpoint(self, path=None, tag='latest',
-            exclude_keys=None, 
-            include_keys=None, 
-            **kwargs):
+            if key in payload["pickles"]:
+                self.__dict__[key] = dill.loads(payload["pickles"][key])
+
+    def load_checkpoint(
+        self, path=None, tag="latest", exclude_keys=None, include_keys=None, **kwargs
+    ):
         if path is None:
             path = self.get_checkpoint_path(tag=tag)
         else:
             path = pathlib.Path(path)
-        payload = torch.load(path.open('rb'), pickle_module=dill, **kwargs)
-        self.load_payload(payload, 
-            exclude_keys=exclude_keys, 
-            include_keys=include_keys)
+        payload = torch.load(path.open("rb"), pickle_module=dill, **kwargs)
+        self.load_payload(payload, exclude_keys=exclude_keys, include_keys=include_keys)
         return payload
-    
+
     @classmethod
-    def create_from_checkpoint(cls, path, 
-            exclude_keys=None, 
-            include_keys=None,
-            **kwargs):
-        payload = torch.load(open(path, 'rb'), pickle_module=dill)
-        instance = cls(payload['cfg'])
+    def create_from_checkpoint(
+        cls, path, exclude_keys=None, include_keys=None, **kwargs
+    ):
+        payload = torch.load(open(path, "rb"), pickle_module=dill)
+        instance = cls(payload["cfg"])
         instance.load_payload(
-            payload=payload, 
+            payload=payload,
             exclude_keys=exclude_keys,
             include_keys=include_keys,
-            **kwargs)
+            **kwargs,
+        )
         return instance
 
-    def save_snapshot(self, tag='latest'):
+    def save_snapshot(self, tag="latest"):
         """
         Quick loading and saving for reserach, saves full state of the workspace.
 
         However, loading a snapshot assumes the code stays exactly the same.
         Use save_checkpoint for long-term storage.
         """
-        path = pathlib.Path(self.output_dir).joinpath('snapshots', f'{tag}.pkl')
+        path = pathlib.Path(self.output_dir).joinpath("snapshots", f"{tag}.pkl")
         path.parent.mkdir(parents=False, exist_ok=True)
-        torch.save(self, path.open('wb'), pickle_module=dill)
+        torch.save(self, path.open("wb"), pickle_module=dill)
         return str(path.absolute())
-    
+
     @classmethod
     def create_from_snapshot(cls, path):
-        return torch.load(open(path, 'rb'), pickle_module=dill)
+        return torch.load(open(path, "rb"), pickle_module=dill)
 
 
 def _copy_to_cpu(x):
     if isinstance(x, torch.Tensor):
-        return x.detach().to('cpu')
+        return x.detach().to("cpu")
     elif isinstance(x, dict):
         result = dict()
         for k, v in x.items():

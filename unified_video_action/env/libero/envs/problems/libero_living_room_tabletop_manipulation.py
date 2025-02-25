@@ -95,7 +95,7 @@ class Libero_Living_Room_Tabletop_Manipulation(BDDLBaseDomain):
                 continue
             # Otherwise the processing is consistent
             for query_dict in [self.objects_dict, self.fixtures_dict]:
-                for (name, body) in query_dict.items():
+                for name, body in query_dict.items():
                     try:
                         if "worldbody" not in list(body.__dict__.keys()):
                             # This is a special case for CompositeObject, we skip this as this is very rare in our benchmark

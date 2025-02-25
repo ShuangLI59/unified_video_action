@@ -23,7 +23,6 @@ dataset:
   _target_: unified_video_action.dataset.pusht_image_dataset.PushTImageDataset
   language_emb_model: null
   horizon: 32
-  max_train_episodes: 90
   pad_after: 7
   pad_before: 1
   seed: 42

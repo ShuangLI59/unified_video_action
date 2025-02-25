@@ -100,7 +100,7 @@ class UmiLazyDataset(BaseLazyDataset):
         print(
             f"Dataset: {self.name}, store_episode_num: {self.store_episode_num}, include_episode_num: {self.include_episode_num}, used_episode_num: {self.used_episode_num}"
         )
-        
+
     def _check_data_validity(self):
         # No need to check data validity for UMI dataset
         pass
@@ -239,7 +239,9 @@ class UmiLazyDataset(BaseLazyDataset):
                     pass
 
         processed_data_dict["action"] = action
-        processed_data_dict["img_indices"] = data_dict["img_indices"][:, None] # [8] -> [8, 1] to satisfy the shape check
+        processed_data_dict["img_indices"] = data_dict["img_indices"][
+            :, None
+        ]  # [8] -> [8, 1] to satisfy the shape check
         return processed_data_dict
 
     # @profile
@@ -258,26 +260,36 @@ class UmiLazyDataset(BaseLazyDataset):
         episode_length = self.episode_frame_nums[episode_idx]
         start_idx = self.episode_starts[episode_idx]
 
-        
         ## select indices
         # T = 32
         # select_timesteps = 4
         # downsample_indices = [i + select_timesteps - 1 for i in range(0, T, T // (select_timesteps * 2))]
         # assert len(downsample_indices) == T // select_timesteps
-        
+
         source_data_dict: dict[str, Any] = {}
         for entry_meta in self.source_data_meta.values():
             if entry_meta.name not in self.data_store_keys:
                 continue
 
             include_indices = entry_meta.include_indices
-            if entry_meta.name in self.output_data_meta and self.output_data_meta[entry_meta.name].data_type == 'image':
+            if (
+                entry_meta.name in self.output_data_meta
+                and self.output_data_meta[entry_meta.name].data_type == "image"
+            ):
                 if self.random_img_sampling:
                     # Randomly sample 4 frames from [-15, 1)
-                    include_indices = (self.rng.choice(np.arange(-15, 1), size=4, replace=False) * self.down_sample_steps).tolist()
-                    include_indices = sorted(include_indices) # Ascending order
-                    include_indices.extend(entry_meta.include_indices[4:]) # The rest of the frames should still be (4, 8, 12, 16) * down_sample_steps
-                source_data_dict["img_indices"] = np.array(include_indices, dtype=np.int32) / self.down_sample_steps + 15
+                    include_indices = (
+                        self.rng.choice(np.arange(-15, 1), size=4, replace=False)
+                        * self.down_sample_steps
+                    ).tolist()
+                    include_indices = sorted(include_indices)  # Ascending order
+                    include_indices.extend(
+                        entry_meta.include_indices[4:]
+                    )  # The rest of the frames should still be (4, 8, 12, 16) * down_sample_steps
+                source_data_dict["img_indices"] = (
+                    np.array(include_indices, dtype=np.int32) / self.down_sample_steps
+                    + 15
+                )
                 # Devide by down_sample_steps to convert the indices to the original scale
                 # include_indices are relative to the current frame (0 is the current frame)
                 # /self.down_sample_steps+15 to convert the indices to the range of the dataset
@@ -288,12 +300,11 @@ class UmiLazyDataset(BaseLazyDataset):
                 for i in indices
             ]
             global_indices = [start_idx + i for i in indices]
-            
+
             ## select indices
             # if entry_meta.name!='robot0_demo_start_pose':
             #     assert len(global_indices) == T
             #     global_indices = np.array(global_indices)[downsample_indices]
-            
 
             # HACK: zarr3.0 does not support python 3.9, while zarr2 does not support visiting items using list.
             source_data_dict[entry_meta.name] = np.array(
@@ -301,7 +312,6 @@ class UmiLazyDataset(BaseLazyDataset):
             )
             # source_data_dict[entry_meta.name] = np.zeros((len(global_indices), *entry_meta.shape))
 
-        
         processed_data_dict = self._process_source_data(source_data_dict)
 
         output_data_dict: dict[str, Any] = {}
@@ -332,7 +342,7 @@ class UmiLazyDataset(BaseLazyDataset):
 
         # HACK: action is directly stored:
         output_data_dict["action"] = output_data_dict["action"]["action"]
-        
+
         output_data_dict["dataset_name"] = self.name
 
         return output_data_dict

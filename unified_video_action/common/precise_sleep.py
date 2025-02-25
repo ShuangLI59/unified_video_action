@@ -1,6 +1,7 @@
 import time
 
-def precise_sleep(dt: float, slack_time: float=0.001, time_func=time.monotonic):
+
+def precise_sleep(dt: float, slack_time: float = 0.001, time_func=time.monotonic):
     """
     Use hybrid of time.sleep and spinning to minimize jitter.
     Sleep dt - slack_time seconds first, then spin for the rest.
@@ -13,7 +14,8 @@ def precise_sleep(dt: float, slack_time: float=0.001, time_func=time.monotonic):
         pass
     return
 
-def precise_wait(t_end: float, slack_time: float=0.001, time_func=time.monotonic):
+
+def precise_wait(t_end: float, slack_time: float = 0.001, time_func=time.monotonic):
     t_start = time_func()
     t_wait = t_end - t_start
     if t_wait > 0:

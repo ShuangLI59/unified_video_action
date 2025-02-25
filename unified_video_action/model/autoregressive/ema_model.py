@@ -2,6 +2,7 @@ import copy
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
+
 class EMAModel:
     """
     Exponential Moving Average of models weights
@@ -14,7 +15,7 @@ class EMAModel:
         inv_gamma=1.0,
         power=2 / 3,
         min_value=0.0,
-        max_value=0.9999
+        max_value=0.9999,
     ):
         """
         @crowsonkb's notes on EMA Warmup:
@@ -64,12 +65,16 @@ class EMAModel:
         #         old_all_dataptrs.add(data_ptr)
 
         all_dataptrs = set()
-        for module, ema_module in zip(new_model.modules(), self.averaged_model.modules()):            
-            for param, ema_param in zip(module.parameters(recurse=False), ema_module.parameters(recurse=False)):
+        for module, ema_module in zip(
+            new_model.modules(), self.averaged_model.modules()
+        ):
+            for param, ema_param in zip(
+                module.parameters(recurse=False), ema_module.parameters(recurse=False)
+            ):
                 # iterative over immediate parameters only.
                 if isinstance(param, dict):
-                    raise RuntimeError('Dict parameter not supported')
-                
+                    raise RuntimeError("Dict parameter not supported")
+
                 # data_ptr = param.data_ptr()
                 # if data_ptr != 0:
                 #     all_dataptrs.add(data_ptr)
@@ -81,7 +86,9 @@ class EMAModel:
                     ema_param.copy_(param.to(dtype=ema_param.dtype).data)
                 else:
                     ema_param.mul_(self.decay)
-                    ema_param.add_(param.data.to(dtype=ema_param.dtype), alpha=1 - self.decay)
+                    ema_param.add_(
+                        param.data.to(dtype=ema_param.dtype), alpha=1 - self.decay
+                    )
 
         # verify that iterating over module and then parameters is identical to parameters recursively.
         # assert old_all_dataptrs == all_dataptrs

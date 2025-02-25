@@ -6,14 +6,14 @@ defaults:
   - model: uva
 
 dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 8
   persistent_workers: false
   pin_memory: true
   shuffle: true
 
 val_dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 8
   persistent_workers: false
   pin_memory: true
@@ -48,7 +48,7 @@ checkpoint:
     mode: max
 
 ema:
-  _target_: unified_video_action.model.diffusion.ema_model.EMAModel
+  _target_: unified_video_action.model.autoregressive.ema_model.EMAModel
   inv_gamma: 1.0
   max_value: 0.9999
   min_value: 0.0

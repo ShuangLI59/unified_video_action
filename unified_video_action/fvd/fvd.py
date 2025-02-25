@@ -2,9 +2,11 @@ import torch
 import math
 import torch.nn.functional as F
 import pdb
+
+
 def preprocess_single(video, resolution, sequence_length=None):
     # video: THWC, {0, ..., 255}
-    video = video.permute(0, 3, 1, 2).float() / 255. # TCHW
+    video = video.permute(0, 3, 1, 2).float() / 255.0  # TCHW
     t, c, h, w = video.shape
 
     # temporal crop
@@ -18,40 +20,45 @@ def preprocess_single(video, resolution, sequence_length=None):
         target_size = (resolution, math.ceil(w * scale))
     else:
         target_size = (math.ceil(h * scale), resolution)
-    video = F.interpolate(video, size=target_size, mode='bilinear',
-                          align_corners=False)
+    video = F.interpolate(video, size=target_size, mode="bilinear", align_corners=False)
 
     # center crop
     t, c, h, w = video.shape
     w_start = (w - resolution) // 2
     h_start = (h - resolution) // 2
-    video = video[:, :, h_start:h_start + resolution, w_start:w_start + resolution]
-    video = video.permute(1, 0, 2, 3).contiguous() # CTHW
+    video = video[:, :, h_start : h_start + resolution, w_start : w_start + resolution]
+    video = video.permute(1, 0, 2, 3).contiguous()  # CTHW
 
     video -= 0.5
 
     return video
 
+
 def preprocess(videos, target_resolution=224):
     # videos in {0, ..., 255} as np.uint8 array
     b, t, h, w, c = videos.shape
     videos = torch.from_numpy(videos)
-    videos = torch.stack([preprocess_single(video, target_resolution) for video in videos])
-    return videos * 2 # [-0.5, 0.5] -> [-1, 1]
+    videos = torch.stack(
+        [preprocess_single(video, target_resolution) for video in videos]
+    )
+    return videos * 2  # [-0.5, 0.5] -> [-1, 1]
+
 
 def get_fvd_logits(videos, i3d, device):
     videos = preprocess(videos)
     embeddings = get_logits(i3d, videos, device)
     return embeddings
 
+
 # https://github.com/tensorflow/gan/blob/de4b8da3853058ea380a6152bd3bd454013bf619/tensorflow_gan/python/eval/classifier_metrics.py#L161
 def _symmetric_matrix_square_root(mat, eps=1e-10):
     # try:
     u, s, v = torch.svd(mat)
     # except:
-        # pdb.set_trace()
+    # pdb.set_trace()
     si = torch.where(s < eps, s, torch.sqrt(s))
     return torch.matmul(torch.matmul(u, torch.diag(si)), v.t())
+
 
 # https://github.com/tensorflow/gan/blob/de4b8da3853058ea380a6152bd3bd454013bf619/tensorflow_gan/python/eval/classifier_metrics.py#L400
 def trace_sqrt_product(sigma, sigma_v):
@@ -59,9 +66,10 @@ def trace_sqrt_product(sigma, sigma_v):
     sqrt_a_sigmav_a = torch.matmul(sqrt_sigma, torch.matmul(sigma_v, sqrt_sigma))
     return torch.trace(_symmetric_matrix_square_root(sqrt_a_sigmav_a))
 
+
 # https://discuss.pytorch.org/t/covariance-and-gradient-support/16217/2
 def cov(m, rowvar=False):
-    '''Estimate a covariance matrix given data.
+    """Estimate a covariance matrix given data.
 
     Covariance indicates the level to which two variables vary together.
     If we examine N-dimensional samples, `X = [x_1, x_2, ... x_N]^T`,
@@ -79,15 +87,15 @@ def cov(m, rowvar=False):
 
     Returns:
         The covariance matrix of the variables.
-    '''
+    """
     if m.dim() > 2:
-        raise ValueError('m has more than 2 dimensions')
+        raise ValueError("m has more than 2 dimensions")
     if m.dim() < 2:
         m = m.view(1, -1)
     if not rowvar and m.size(0) != 1:
         m = m.t()
 
-    fact = 1.0 / (m.size(1) - 1) # unbiased estimate
+    fact = 1.0 / (m.size(1) - 1)  # unbiased estimate
     m -= torch.mean(m, dim=1, keepdim=True)
     mt = m.t()  # if complex: mt = m.t().conj()
     return fact * m.matmul(mt).squeeze()

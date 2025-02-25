@@ -24,7 +24,7 @@ dataset:
       mask_mirror: False
 
   zarr_path: "" # Will be overridden in the initialization function
-  normalizer_type: all
+  normalizer_type: none
   language_emb_model: null
   # The rest should be inherited from umi_lazy_dataset that are kept the same for all the datasets.
 
