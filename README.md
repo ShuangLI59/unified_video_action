@@ -14,17 +14,6 @@ Stanford University
 
 <img src="media/overview.png" alt="drawing" width="100%"/>
 
-## Citation
-
-If you find this work useful, please consider citing:
-
-```bibtex
-@article{li2503unified,
-  title={Unified video action model, 2025},
-  author={Li, Shuang and Gao, Yihuai and Sadigh, Dorsa and Song, Shuran},
-  journal={arXiv preprint arXiv:2503.00200}
-}
-```
 
 ## 🛝 Try UVA on Colab
 We provide a colab notebook for UVA on [PushT](https://colab.research.google.com/drive/1WQfiGat3pTr5DZqWa760zI3JrdH_M86O?usp=sharing) using the pretrained checkpoint.
@@ -255,7 +244,19 @@ Larger model size: UVA's performance may currently be limited by the model size.
 This repository is provided under the MIT license. For more details, please refer to [LICENSE](LICENSE).
 
 
-
 ## 🙏 Acknowledgement
 * Lots of code are inherited from [Diffusion Policy](https://github.com/real-stanford/diffusion_policy) and [MAR](https://github.com/LTH14/mar).
 * For real-world UMI experiments, we use the public datasets collected by [UMI](https://github.com/real-stanford/universal_manipulation_interface) and [Data Scaling Laws in Imitation Learning for Robotic Manipulation](https://github.com/Fanqi-Lin/Data-Scaling-Laws).
+
+
+## Citation
+
+If you find this work useful, please consider citing:
+
+```bibtex
+@article{li2503unified,
+  title={Unified video action model, 2025},
+  author={Li, Shuang and Gao, Yihuai and Sadigh, Dorsa and Song, Shuran},
+  journal={arXiv preprint arXiv:2503.00200}
+}
+```
