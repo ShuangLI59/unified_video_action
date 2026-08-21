@@ -14,6 +14,18 @@ Stanford University
 
 <img src="media/overview.png" alt="drawing" width="100%"/>
 
+## Citation
+
+If you find this work useful, please consider citing:
+
+```bibtex
+@article{li2503unified,
+  title={Unified video action model, 2025},
+  author={Li, Shuang and Gao, Yihuai and Sadigh, Dorsa and Song, Shuran},
+  journal={arXiv preprint arXiv:2503.00200}
+}
+```
+
 ## 🛝 Try UVA on Colab
 We provide a colab notebook for UVA on [PushT](https://colab.research.google.com/drive/1WQfiGat3pTr5DZqWa760zI3JrdH_M86O?usp=sharing) using the pretrained checkpoint.
 
